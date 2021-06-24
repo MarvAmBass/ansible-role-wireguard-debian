@@ -1,0 +1,7 @@
+---
+- name: restart networking daemon
+  become: true
+  service:
+    name: networking
+    state: restarted
+  listen: 'restart networking'

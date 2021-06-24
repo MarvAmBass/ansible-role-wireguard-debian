@@ -1,0 +1,10 @@
+auto {{ wireguard_interface }}
+iface {{ wireguard_interface }} inet static
+        address {{ address }}
+        netmask {{ netmask }}
+        pre-up ip link add $IFACE type wireguard
+        pre-up wg setconf $IFACE /etc/wireguard/$IFACE.conf
+        post-up /bin/sh -c 'iptables -A FORWARD -i {{ wireguard_interface }} -j ACCEPT; iptables -A FORWARD -o {{ wireguard_interface }} -j ACCEPT; iptables -t nat -A POSTROUTING -o {{ ansible_default_ipv4.interface }} -j MASQUERADE'
+        post-down ip link del $IFACE
+        post-down /bin/sh -c 'iptables -D FORWARD -i {{ wireguard_interface }} -j ACCEPT; iptables -D FORWARD -o {{ wireguard_interface }} -j ACCEPT; iptables -t nat -D POSTROUTING -o {{ ansible_default_ipv4.interface }} -j MASQUERADE'
+

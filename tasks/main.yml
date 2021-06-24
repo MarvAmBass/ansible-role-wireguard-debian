@@ -1,0 +1,124 @@
+---
+
+- name: check if required variable is set - 'address'
+  ansible.builtin.fail: 
+    msg: "Bailing out - this play requires 'address'"
+  when: address is not defined
+
+- name: check if required variable is set - 'privateKey'
+  ansible.builtin.fail: 
+    msg: "Bailing out - this play requires 'privateKey'"
+  when: privateKey is not defined
+
+- name: check if required variable is set - 'peers'
+  ansible.builtin.fail: 
+    msg: "Bailing out - this play requires 'peers'"
+  when: peers is not defined
+
+
+- name: copy unstable-wireguard.list
+  become: true
+  copy:
+    src: unstable-wireguard.list
+    dest: /etc/apt/sources.list.d/unstable-wireguard.list
+    owner: root
+    group: root
+    mode: 0600
+
+- name: copy limit-unstable
+  become: true
+  copy:
+    src: limit-unstable
+    dest: /etc/apt/preferences.d/limit-unstable
+    owner: root
+    group: root
+    mode: 0600
+
+- name: add apt keys
+  become: true
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: 7638D0442B90D010
+  ignore_errors: true
+
+- name: add apt keys
+  become: true
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: 04EE7237B7D453EC
+  ignore_errors: true
+
+  
+- name: Install linux headers
+  become: true
+  apt:
+    name: "linux-headers-{{ ansible_kernel }}"
+
+- name: Install wireguard
+  become: true
+  apt: 
+    name: wireguard
+    state: present
+    update_cache: yes
+  notify: 'restart networking'
+
+- name: Install dkms 
+  become: true
+  apt: name=dkms state=present
+  notify: 'restart networking'
+
+- name: Install wireguard-dkms 
+  become: true
+  apt: name=wireguard-dkms state=present
+  notify: 'restart networking'
+
+- name: Install wireguard-tools 
+  become: true
+  apt: name=wireguard-tools state=present
+  notify: 'restart networking'
+
+- name: Install iptables
+  become: true
+  apt: name=iptables state=present
+
+- name: Install qrencode
+  become: true
+  apt: name=qrencode state=present
+
+- name: enable routing in sysctl.conf
+  become: true
+  lineinfile:
+    path: /etc/sysctl.conf
+    regexp: '^net.ipv4.ip_forward'
+    line: net.ipv4.ip_forward=1
+  when: wireguard_is_router == true
+
+- name: disable routing in sysctl.conf
+  become: true
+  lineinfile:
+    path: /etc/sysctl.conf
+    regexp: '^net.ipv4.ip_forward'
+    line: net.ipv4.ip_forward=0
+  when: wireguard_is_router == false
+
+- name: "generate interfaces.d/{{ wireguard_interface }}"
+  become: true
+  template:
+    src: "interfaces.d/wireguard.j2"
+    dest: "/etc/network/interfaces.d/{{ wireguard_interface }}"
+    owner: root
+    group: root
+    mode: 0600
+  notify: 'restart networking'
+
+- name: "generate wireguard/{{ wireguard_interface }}.conf"
+  become: true
+  template:
+    src: "wireguard/wireguard.conf.j2"
+    dest: "/etc/wireguard/{{ wireguard_interface }}.conf"
+    owner: root
+    group: root
+    mode: 0600
+  notify: 'restart networking'
+
+

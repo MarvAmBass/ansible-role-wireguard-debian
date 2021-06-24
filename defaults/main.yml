@@ -1,0 +1,8 @@
+---
+
+netmask: 255.255.255.0
+  
+wireguard_interface: wg-p2p
+wireguard_port: 51820
+
+wireguard_is_router: true

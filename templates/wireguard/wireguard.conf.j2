@@ -1,0 +1,22 @@
+{% set address_netmask = address ~ '/' ~ netmask %}
+[Interface]
+#Address = {{ address }}/{{ address_netmask | ansible.netcommon.ipaddr('prefix') }}
+PrivateKey = {{ privateKey }}
+ListenPort = {{ wireguard_port }}
+
+
+{% for peer in peers %}
+[Peer]
+PublicKey = {{ peer.publicKey }}
+AllowedIPs = {{ peer.allowedIPs }}
+{% if peer.persistentKeepalive is defined %}
+PersistentKeepalive = {{ peer.persistentKeepalive }}
+{% endif %}
+{% if peer.presharedKey is defined %}
+PresharedKey = {{ peer.presharedKey }}
+{% endif %}
+{% if peer.endpoint is defined %}
+Endpoint = {{ peer.endpoint }}
+{% endif %}
+{% endfor %}
+
